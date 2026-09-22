@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en" class="dark">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Agentic Software Team — Dashboard</title>
+<style>
+  :root{
+    --bg:#0b0f17;--surface:#111827;--surface2:#1a2231;--border:#243044;
+    --text:#e5e9f0;--muted:#8b98ab;--accent:#6366f1;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font:14px/1.5 "Segoe UI",system-ui,sans-serif;min-height:100vh;display:flex;flex-direction:column}
+  header{padding:14px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface)}
+  header h1{font-size:16px;font-weight:600}
+  header h1 span{color:var(--accent)}
+  .badge{font-size:11px;padding:2px 8px;border-radius:99px;background:var(--surface2);border:1px solid var(--border);color:var(--muted)}
+  main{display:grid;grid-template-columns:320px 1fr;gap:1px;background:var(--border);flex:1;min-height:0}
+  aside{background:var(--surface);padding:16px;overflow:auto}
+  main{background:var(--bg);padding:20px 24px;overflow:auto}
+  .section-title{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin:18px 0 8px}
+  .section-title:first-child{margin-top:0}
+  .proj{padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+  .proj:hover,.proj.active{border-color:var(--accent)}
+  .proj b{display:block;font-size:13px}
+  .proj small{color:var(--muted)}
+  .pill{display:inline-block;font-size:10px;padding:1px 7px;border-radius:99px;font-weight:600}
+  .pill.running,.pill.completed-ok{background:rgba(34,197,94,.15);color:var(--ok)}
+  .pill.waiting_approval,.pill.paused{background:rgba(245,158,11,.15);color:var(--warn)}
+  .pill.failed{background:rgba(239,68,68,.15);color:var(--err)}
+  .newproj{margin-top:12px;padding:10px;width:100%;border-radius:8px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:13px}
+  .newproj:focus{outline:1px solid var(--accent)}
+  button.primary{width:100%;margin-top:8px;padding:10px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
+  button.primary:disabled{opacity:.5;cursor:wait}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:18px}
+  .stat{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px}
+  .stat b{font-size:22px;display:block}
+  .stat small{color:var(--muted)}
+  .timeline{display:flex;flex-direction:column;gap:6px}
+  .ev{display:flex;gap:10px;align-items:baseline;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:12px}
+  .ev .t{color:var(--muted);font-size:11px;white-space:nowrap}
+  .ev .a{font-weight:600;min-width:110px}
+  .ev.ok .s{color:var(--ok)} .ev.failed .s,.ev.error .s{color:var(--err)} .ev.warn .s{color:var(--warn)}
+  .phase-flow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:18px}
+  .phase{padding:6px 12px;border-radius:99px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--muted)}
+  .phase.active{border-color:var(--accent);color:var(--text);background:rgba(99,102,241,.12)}
+  .phase.done{border-color:var(--ok);color:var(--ok)}
+  .artifact{padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:8px;font-size:13px;cursor:pointer}
+  .artifact:hover{border-color:var(--accent)}
+  pre{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;overflow:auto;max-height:60vh;font-size:12px;line-height:1.5}
+  .muted{color:var(--muted)}
+  .approval{background:rgba(245,158,11,.08);border:1px solid var(--warn);border-radius:10px;padding:12px;margin-bottom:10px}
+  .approval button{margin-right:8px;padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer}
+  .approval button.approve{background:var(--ok);border-color:var(--ok);color:#06220f;font-weight:600}
+  .approval button.reject{color:var(--err)}
+  .tabs{display:flex;gap:4px;margin-bottom:14px}
+  .tab{padding:7px 14px;border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:0;background:var(--surface);color:var(--muted);cursor:pointer;font-size:13px}
+  .tab.active{color:var(--text);background:var(--surface2)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <h1> AgenTEAM — <span>Agentic AI Software Team</span></h1>
+  <div class="badge" id="api-base">api: localhost</div>
+</header>
+<main>
+  <aside>
+    <div class="section-title">Projects</div>
+    <div id="projects"></div>
+    <div class="section-title">New project</div>
+    <input class="newproj" id="np-name" placeholder="Project name"/>
+    <textarea class="newproj" id="np-idea" rows="3" placeholder="Describe the software idea…"></textarea>
+    <button class="primary" id="np-btn">Run agent team →</button>
+  </aside>
+  <main id="detail">
+    <p class="muted">Select or create a project to see the team at work.</p>
+  </main>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+let activeId=null, pollTimer=null;
+
+async function api(path,opt){const r=await fetch('/api'+path,opt);if(!r.ok)throw new Error(await r.text());return r.status===204?null:r.json()}
+
+async function loadProjects(){
+  const list=await api('/projects');
+  $('#projects').innerHTML=list.map(p=>`
+    <div class="proj ${p.project_id===activeId?'active':''}" data-id="${p.project_id}">
+      <b>${esc(p.name)}</b>
+      <small>${esc(p.idea).slice(0,60)}…</small><br/>
+      <span class="pill ${p.status}">${p.phase} · ${p.status}</span>
+    </div>`).join('');
+  document.querySelectorAll('.proj').forEach(el=>el.onclick=()=>select(el.dataset.id));
+  return list;
+}
+
+function esc(s){const d=document.createElement('div');d.textContent=s??'';return d.innerHTML}
+
+async function select(id){
+  activeId=id;
+  if(pollTimer)clearInterval(pollTimer);
+  await render();
+  pollTimer=setInterval(async()=>{if(activeId)try{await render()}catch{}},3000);
+}
+
+const PHASES=['analysis','requirements','architecture','implementation','qa','security','deployment','completed'];
+
+async function render(){
+  if(!activeId)return;
+  const p=await api('/projects/'+activeId);
+  const events=await api('/projects/'+activeId+'/events?limit=50');
+  const arts=await api('/projects/'+activeId+'/artifacts');
+  const phaseIdx=PHASES.indexOf(p.phase);
+  const pending=(p.approvals||[]).filter(a=>a.status==='pending');
+
+  $('#detail').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px">
+      <h2 style="font-size:18px">${esc(p.name)}</h2>
+      <span class="pill ${p.status}">${p.status}</span>
+    </div>
+    <p class="muted" style="margin-bottom:14px">${esc(p.idea)}</p>
+    <div class="phase-flow">${PHASES.map((ph,i)=>`<span class="phase ${i<phaseIdx||p.status==='completed'?'done':i===phaseIdx?'active':''}">${ph}</span>`).join('<span class="muted">→</span>')}</div>
+    <div class="grid">
+      <div class="stat"><b>${p.metrics.tasks_total}</b><small>tasks</small></div>
+      <div class="stat"><b>${p.metrics.events_total}</b><small>events</small></div>
+      <div class="stat"><b>${p.metrics.pending_approvals}</b><small>pending approvals</small></div>
+      <div class="stat"><b>${arts.length}</b><small>artifacts</small></div>
+    </div>
+    ${pending.length?`<div class="section-title">Approvals</div>${pending.map(a=>`
+      <div class="approval">
+        <b>⛔ ${esc(a.checkpoint)}</b> — ${esc(a.request_reason||'')}
+        <div style="margin-top:8px">
+          <button class="approve" onclick="decide('${a.approval_id}','approved')">Approve</button>
+          <button class="reject" onclick="decide('${a.approval_id}','rejected')">Reject</button>
+        </div>
+      </div>`).join('')}`:''}
+    <div class="tabs">
+      <div class="tab active" data-tab="ev">Activity</div>
+      <div class="tab" data-tab="art">Artifacts</div>
+    </div>
+    <div id="tab-ev">${events.length?'<div class="timeline">'+events.slice(0,40).map(e=>`
+      <div class="ev ${e.status.startsWith('ok')?'ok':e.status.includes('error')||e.status.includes('fail')?'failed':'warn'}">
+        <span class="t">${new Date(e.timestamp).toLocaleTimeString()}</span>
+        <span class="a">${esc(e.agent)}</span>
+        <span>${esc(e.event_type)}</span>
+        <span class="s muted" style="margin-left:auto">${esc(e.status).slice(0,120)}</span>
+      </div>`).join('')+'</div>':'<p class="muted">No events yet.</p>'}</div>
+    <div id="tab-art" class="hidden">${arts.length?arts.map(a=>`
+      <div class="artifact" onclick="showArtifact('${a.key}')">📄 <b>${esc(a.key)}</b> <span class="muted">· ${esc(a.agent)} · ${new Date(a.created_at).toLocaleString()}</span></div>`).join(''):'<p class="muted">No artifacts yet.</p>'}</div>`;
+  document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    ['ev','art'].forEach(id=>$('#tab-'+id).classList.toggle('hidden',id!==t.dataset.tab));
+  });
+}
+
+async function showArtifact(key){
+  const j=await api('/projects/'+activeId+'/artifacts/'+key);
+  alert(JSON.stringify(j,null,2).slice(0,8000));
+}
+window.showArtifact=showArtifact;
+
+async function decide(id,decision){
+  await api('/approvals/'+id+'/decide',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({decision})});
+  await loadProjects(); await render();
+}
+window.decide=decide;
+
+$('#np-btn').onclick=async()=>{
+  const name=$('#np-name').value.trim(), idea=$('#np-idea').value.trim();
+  if(!name||!idea)return alert('name and idea required');
+  $('#np-btn').disabled=true;
+  try{
+    const r=await api('/projects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,idea,auto:true})});
+    $('#np-name').value='';$('#np-idea').value='';
+    await loadProjects(); select(r.project_id);
+  }catch(e){alert('failed: '+e.message)}
+  $('#np-btn').disabled=false;
+};
+
+loadProjects().catch(console.error);
+setInterval(()=>loadProjects().catch(()=>{}),5000);
+</script>
+</body>
+</html>
